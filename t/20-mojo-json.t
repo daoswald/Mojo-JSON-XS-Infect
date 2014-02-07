@@ -373,52 +373,52 @@ note '"inf" and "nan"';
 
 # Errors
 note 'Errors';
+
+my $error_re = qr/^Malformed JSON: \(/;
+
 is $json->decode('["â™¥"]'), undef, 'wide character in input';
-#is $json->error, 'Wide character in input', 'right error';
+like $json->error, $error_re, 'error';
+
 is $json->decode(encode('UTF-16LE',"\x{feff}[\"\\ud800\"]")), undef,
-  'missing high surrogate';
-#is $json->error, 'Malformed JSON: Missing low-surrogate at line 1, offset 8',
-#  'right error';
-is $json->decode(encode('UTF-16LE', "\x{feff}[\"\\udf46\"]")), undef,
   'missing low surrogate';
-#is $json->error, 'Malformed JSON: Missing high-surrogate at line 1, offset 8',
-#  'right error';
+like $json->error, $error_re, 'error';
+
+is $json->decode(encode('UTF-16LE', "\x{feff}[\"\\udf46\"]")), undef,
+  'missing high surrogate';
+like $json->error, $error_re, 'error';
+
 is $json->decode('[[]'), undef, 'missing right square bracket';
-#is $json->error, 'Malformed JSON: Expected comma or right square bracket while'
-#  . ' parsing array at line 1, offset 3', 'right error';
+like $json->error, $error_re, 'error';
+
 is $json->decode('{{}'), undef, 'missing right curly bracket';
-#is $json->error, 'Malformed JSON: Expected string while'
-#  . ' parsing object at line 1, offset 1', 'right error';
+like $json->error, $error_re, 'error';
+
 is $json->decode('[[]...'), undef, 'syntax error';
-#is $json->error, 'Malformed JSON: Expected comma or right square bracket while'
-#  . ' parsing array at line 1, offset 3', 'right error';
+like $json->error, $error_re, 'error';
+
 is $json->decode('{{}...'), undef, 'syntax error';
-#is $json->error, 'Malformed JSON: Expected string while'
-#  . ' parsing object at line 1, offset 1', 'right error';
+like $json->error, $error_re, 'error';
+
 is $json->decode('[nan]'), undef, 'syntax error';
-#is $json->error, 'Malformed JSON: Expected string, array, object, number,'
-#  . ' boolean or null at line 1, offset 1', 'right error';
+like $json->error, $error_re, 'error';
+
 is $json->decode('["foo]'), undef, 'syntax error';
-#is $json->error, 'Malformed JSON: Unterminated string at line 1, offset 6',
-#  'right error';
+like $json->error, $error_re, 'error';
+
 is $json->decode('["foo"]lala'), undef, 'syntax error';
-#is $json->error,
-#  'Malformed JSON: Unexpected data after array at line 1, offset 7',
-#  'right error';
+like $json->error, $error_re, 'error';
+
 #is $json->decode('false'), undef, 'no object or array';
-#is $json->error,
-#  'Malformed JSON: Expected array or object at line 0, offset 0',
-#  'right error';
+#like $json->error, $error_re, 'error';
+
 is $json->decode(''), undef, 'no object or array';
-#is $json->error, 'Missing or empty input', 'right error';
+like $json->error, $error_re, 'error';
+
 is $json->decode("[\"foo\",\n\"bar\"]lala"), undef, 'syntax error';
-#is $json->error,
-#  'Malformed JSON: Unexpected data after array at line 2, offset 6',
-#  'right error';
+like $json->error, $error_re, 'error';
+
 is $json->decode("[\"foo\",\n\"bar\",\n\"bazra\"]lalala"), undef,
   'syntax error';
-#is $json->error,
-#  'Malformed JSON: Unexpected data after array at line 3, offset 8',
-#  'right error';
+like $json->error, $error_re, 'error';
 
 done_testing();

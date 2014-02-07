@@ -51,7 +51,7 @@ my $UTF_PATTERNS = {
 
 
 {
-#  no warnings qw( redefine );
+  no warnings qw( redefine );
 
   *Mojo::JSON::new = sub {
     my $class = shift;
@@ -83,9 +83,14 @@ my $UTF_PATTERNS = {
 
     my $result;
 
-    eval { $result = $self->{_jsonxs}->decode($string); };
+    eval {
+      no warnings 'uninitialized';
+      $result = $self->{_jsonxs}->decode($string);
+    };
 
     if ($@) {
+        no warnings 'uninitialized';
+        $string = "Malformed JSON: ($string)";
         $self->error($string, $@);
         return;
     }
