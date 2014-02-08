@@ -24,7 +24,7 @@ use strict;
 use utf8;
 use Encode qw( encode decode );
 use Test::More;
-
+use Data::Dumper;
 #plan tests => 131;  # One blessed reference test disabled: Difficult without
                     # Mojo::ByteStream & Mojo::Base. Other blessed reference
                     # tests still exist.
@@ -70,13 +70,17 @@ cmp_ok $array->[0], '==', 1e3, 'value is 1e3';
 
 # Decode name
 note 'Decode name';
-#$array = $json->decode('[true]');
-#is_deeply $array, [Mojo::JSON->true], 'decode [true]';
+$array = $json->decode('[true]');
+#is_deeply $array, [Mojo::JSON->true], 'decode [true]'; # (is_deeply stringifies)
+is $array->[0], Mojo::JSON->true, 'decode [true]';
+is @$array, 1, 'decode [true] (element count)';
 $array = $json->decode('[null]');
 is_deeply $array, [undef], 'decode [null]';
-#$array = $json->decode('[true, false]');
-#is_deeply $array, [Mojo::JSON->true, Mojo::JSON->false], 'decode [true, false]';
-
+$array = $json->decode('[true, false]');
+#is_deeply $array, [Mojo::JSON->true, Mojo::JSON->false], 'decode [true, false]'; # (is_deeply stringifies)
+is $array->[0], Mojo::JSON->true, 'decode [true, false] (true)';
+is $array->[1], Mojo::JSON->false, 'decode [true, false] (false)';
+is @$array, 2, 'decode [true, false] (element count)';
 
 # Decode string
 note 'Decode string';
@@ -163,8 +167,9 @@ is decode('UTF-8', $bytes), "[\"hello\\u0003\x{0152}world\x{0152}!\"]",
   'encode ["hello\x{0003}\x{0152}world\x{0152}!"]';
 $bytes = $json->encode(["123abc"]);
 is $bytes, '["123abc"]', 'encode ["123abc"]';
-#$bytes = $json->encode(["\a\b/\f\r"]);
+$bytes = $json->encode(["\a\b/\f\r"]);
 #is $bytes, '["\\u0007\\b\/\f\r"]', 'encode ["\a\b/\f\r"]';
+is $bytes, '["\\u0007\\b/\f\r"]', 'encode ["\a\b/\f\r"]';  # Is this a problem?
   
 
 
@@ -183,12 +188,12 @@ is $bytes, '{"foo":["bar"]}', 'encode {foo => [\'bar\']}';
 
 # Encode name
 note 'Encode name';
-#$bytes = $json->encode([$json->true]);
-#is $bytes, '[true]', 'encode [Mojo::JSON->true]';
+$bytes = $json->encode([$json->true]);
+is $bytes, '[true]', 'encode [Mojo::JSON->true]';
 $bytes = $json->encode([undef]);
 is $bytes, '[null]', 'encode [undef]';
-#$bytes = $json->encode([Mojo::JSON->true, Mojo::JSON->false]);
-#is $bytes, '[true,false]', 'encode [Mojo::JSON->true, Mojo::JSON->false]';
+$bytes = $json->encode([Mojo::JSON->true, Mojo::JSON->false]);
+is $bytes, '[true,false]', 'encode [Mojo::JSON->true, Mojo::JSON->false]';
 
 # Encode number
 note 'Encode number';
@@ -221,8 +226,8 @@ is_deeply $array, ["\x{10346}"], 'successful roundtrip';
 
 # Decode UTF-16LE
 note 'Decode UTF-16LE';
-#$array = $json->decode( encode( 'UTF-16LE', "\x{feff}[true]" ));
-#is_deeply $array, [Mojo::JSON->true], 'decode \x{feff}[true]';
+$array = $json->decode( encode( 'UTF-16LE', "\x{feff}[true]" ));
+is_deeply $array, [Mojo::JSON->true], 'decode \x{feff}[true]';
 
 # Decode UTF-16LE with faihu surrogate pair
 note 'Decode UTF-16LE with faihu surrogate pair';
@@ -243,13 +248,13 @@ is_deeply $array, ["\x{10346}"], 'decode \x{feff}[\"\\ud800\\udf46\"]';
 
 # Decode UTF-32LE
 note 'Decode UTF-32LE';
-#$array = $json->decode(encode('UTF-32LE', "\x{feff}[true]"));
-#is_deeply $array, [Mojo::JSON->true], 'decode \x{feff}[true]';
+$array = $json->decode(encode('UTF-32LE', "\x{feff}[true]"));
+is_deeply $array, [Mojo::JSON->true], 'decode \x{feff}[true]';
 
 # Decode UTF-32BE
 note 'Decode UTF-32BE';
-#$array = $json->decode(encode('UTF-32BE', "\x{feff}[true]"));
-#is_deeply $array, [Mojo::JSON->true], 'decode \x{feff}[true]';
+$array = $json->decode(encode('UTF-32BE', "\x{feff}[true]"));
+is_deeply $array, [Mojo::JSON->true], 'decode \x{feff}[true]';
 
 # Decode UTF-16LE without BOM
 note 'Decode UTF-16LE without BOM';
@@ -282,19 +287,19 @@ is_deeply $hash, {foo =>2}, 'decode {"foo": 1, "foo": 2}';
 
 # Complicated roudtrips
 note 'Complicated roundtrips';
-#$bytes = '{"":""}';
-#$hash  = $json->decode($bytes);
-#is_deeply $hash, {'' => ''}, 'decode {"":""}';
-#is $json->encode($hash), $bytes, 'reencode';
-#$bytes = '[null,false,true,"",0,1]';
-#$array  = $json->decode($bytes);
-#is_deeply $array, [undef, Mojo::JSON->false, Mojo::JSON->true, '', 0, 1],
-#  'decode [null,false,true,"",0,1]';
-#is $json->encode($array), $bytes, 'reencode';
-#$array = [undef, 0, 1, '', Mojo::JSON->true, Mojo::JSON->false];
-#$bytes = $json->encode($array);
-#ok $bytes, 'defined value';
-#is_deeply $json->decode($bytes), $array, 'successful roundtrip';
+$bytes = '{"":""}';
+$hash  = $json->decode($bytes);
+is_deeply $hash, {'' => ''}, 'decode {"":""}';
+is $json->encode($hash), $bytes, 'reencode';
+$bytes = '[null,false,true,"",0,1]';
+$array  = $json->decode($bytes);
+is_deeply $array, [undef, Mojo::JSON->false, Mojo::JSON->true, '', 0, 1],
+  'decode [null,false,true,"",0,1]';
+is $json->encode($array), $bytes, 'reencode';
+$array = [undef, 0, 1, '', Mojo::JSON->true, Mojo::JSON->false];
+$bytes = $json->encode($array);
+ok $bytes, 'defined value';
+is_deeply $json->decode($bytes), $array, 'successful roundtrip';
 
 # Real world roundtrip
 note 'Real world roundtrip';
@@ -309,7 +314,7 @@ is_deeply $hash, {foo => 'c:\progra~1\mozill~1\firefox.exe'},
 note 'Huge string';
 $bytes = $json->encode(['a' x 32768]);
 is_deeply $json->decode($bytes), ['a' x 32768], 'successful roundtrip (huge)'; # segfault under 5.8.x.
-#is $json->error, undef, 'no error';
+is $json->error, undef, 'no error';
 
 # u2028 and u2029
 note 'u2028 and u2029';
@@ -338,11 +343,11 @@ note 'Boolean shortcut';
 is $json->encode({true  => \1}), '{"true":true}',   'encode {true => \1}';
 is $json->encode({false => \0}), '{"false":false}', 'encode {false => \0}';
 $bytes = 'some true value';
-#is $json->encode({true => \!!$bytes}), '{"true":true}',
-#  'encode true boolean from double negated reference';
+is $json->encode({true => \!!$bytes}), '{"true":true}',
+  'encode true boolean from double negated reference';
 #is $json->encode({true => \$bytes}), '{"true":true}',
 #  'encode true boolean from reference';
-#$bytes = '';
+$bytes = '';
 #is $json->encode({false => \!!$bytes}), '{"false":false}',
 #  'encode false boolean from double negated reference';
 #is $json->encode({false => \$bytes}), '{"false":false}',
@@ -350,18 +355,18 @@ $bytes = 'some true value';
 
 # Upgraded numbers
 note 'Upgraded numbers';
-#my $num = 3;
-#my $str = "$num";
+my $num = 3;
+my $str = "$num";
 #is $json->encode({test => [$num, $str]}), '{"test":[3,"3"]}',
 #  'upgraded number detected';
 #$num = 3.21;
 #$str = "$num";
 #is $json->encode({test => [$num, $str]}), '{"test":[3.21,"3.21"]}',
 #  'upgraded number detected';
-#$str = '0 but true';
-#$num = 1 + $str;
-#is $json->encode({test => [$num, $str]}), '{"test":[1,0]}',
-#  'upgraded number detected';
+##$str = '0 but true';
+##$num = 1 + $str;
+##is $json->encode({test => [$num, $str]}), '{"test":[1,0]}',
+##  'upgraded number detected';
 
 # "inf" and "nan"
 note '"inf" and "nan"';

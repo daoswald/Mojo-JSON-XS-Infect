@@ -6,6 +6,12 @@ use warnings;
 use JSON::XS;
 use Mojo::ByteStream 'b';
 use Carp;
+use Types::Serialiser;
+
+
+use Exporter;
+our @ISA = qw( Exporter );
+our @EXPORT_OK = qw( j );
 
 BEGIN{
   if ( eval { my $o = Mojo::JSON->new; 1; } ) {
@@ -16,14 +22,6 @@ BEGIN{
   }
 }
 
-use Exporter;
-our @ISA = qw( Exporter );
-our @EXPORT_OK = qw( j );
-
-
-# Literal names
-our $FALSE = JSON::XS::false;
-our $TRUE  = JSON::XS::true;
 
 # Byte order marks
 my $BOM_RE = qr/
@@ -52,6 +50,10 @@ my $UTF_PATTERNS = {
 
 {
   no warnings qw( redefine );
+
+  *Mojo::JSON::true = sub { Types::Serialiser::true };
+  *Mojo::JSON::false = sub { Types::Serialiser::false };
+
 
   *Mojo::JSON::new = sub {
     my $class = shift;
@@ -100,7 +102,6 @@ my $UTF_PATTERNS = {
 
   *Mojo::JSON::encode = sub {
     my ($self, $ref) = @_;
-
     my $string = $self->{_jsonxs}->encode($ref);
     $string =~ s!\x{2028}!\\u2028!gs;
     $string =~ s!\x{2029}!\\u2029!gs;
@@ -112,5 +113,10 @@ my $UTF_PATTERNS = {
 
 
 }
+
+# Literal names.
+our $FALSE = Mojo::JSON::false;
+our $TRUE  = Mojo::JSON::true;
+
 
 1;
