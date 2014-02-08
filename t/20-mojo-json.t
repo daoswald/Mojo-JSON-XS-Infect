@@ -30,6 +30,7 @@ use Data::Dumper;
                     # tests still exist.
 
 use Mojo::JSON::XS::Infect;
+use Mojo::JSON 'j';
 
 # Decode array
 note 'Decode array';
@@ -217,10 +218,10 @@ is $bytes, '[37.7668,[20]]', 'encode [37.7668, [20]]';
 # Faihu roundtrip
 note 'Faihu roundtrip';
 $bytes = $json->encode(["\x{10346}"]);
-#$bytes = j(["\x{10346}"]);
+$bytes = j(["\x{10346}"]);
 is decode( 'UTF-8', $bytes ), "[\"\x{10346}\"]", 'encode ["\x{10346}"]';
 $array = $json->decode($bytes);
-#$array = j($bytes);
+$array = j($bytes);
 is_deeply $array, ["\x{10346}"], 'successful roundtrip';
 
 
